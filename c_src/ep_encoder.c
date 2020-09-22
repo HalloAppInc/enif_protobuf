@@ -617,11 +617,7 @@ get_oneof_field(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node, ERL_NIF_TERM
         return NULL;
     }
 
-    if (arity != 2 || !enif_is_atom(env, array[0])) {
-        return NULL;
-    }
-
-    *out = array[1];
+    *out = term;
 
     return bsearch(&(array[0]), node->fields, node->size, sizeof(ep_field_t), get_field_compare_name);
 }
