@@ -740,6 +740,12 @@ get_field_compare_name(const void *a, const void *b)
 }
 
 int
+get_field_compare_sub_name(const void *a, const void *b)
+{
+    return (int) (*((ERL_NIF_TERM *) a) - ((ep_field_t *) b)->sub_name);
+}
+
+int
 get_map_field_compare_fnum(const void *a, const void *b)
 {
     return (int) (*((int32_t *) a) - ((ep_field_t *) b)->fnum);
