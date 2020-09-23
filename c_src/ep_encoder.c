@@ -626,17 +626,17 @@ get_oneof_field(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node, ERL_NIF_TERM
     if (output == NULL) {
         _free(buf);
         return NULL;
-    } else {
-        ERL_NIF_TERM name;
-        if(strncmp(buf, "pb_", 3) == 0) {
-            name = make_atom(env, buf + 3);
-        } else {
-            name = make_atom(env, buf);
-        }
-        _free(buf);
-
-        return bsearch((&(name)), node->fields, node->size, sizeof(ep_field_t), get_field_compare_name);
     }
+
+    ERL_NIF_TERM name;
+    if(strncmp(buf, "pb_", 3) == 0) {
+        name = make_atom(env, buf + 3);
+    } else {
+        name = make_atom(env, buf);
+    }
+    _free(buf);
+
+    return bsearch((&(name)), node->fields, node->size, sizeof(ep_field_t), get_field_compare_name);
 }
 
 static ERL_NIF_TERM
