@@ -20,6 +20,12 @@ sort_compare_name_field(const void *a, const void *b)
 }
 
 static int
+sort_compare_sub_name_l_field(const void *a, const void *b)
+{
+    return (int) (((ep_field_t *) a)->sub_name - ((ep_field_t *) b)->sub_name);
+}
+
+static int
 sort_compare_msg_field(const void *a, const void *b)
 {
     return (int) (((ep_field_t *) a)->rnum - ((ep_field_t *) b)->rnum);
@@ -43,7 +49,8 @@ make_node(int fields_n, node_type_e n_type)
     if (fields_n > 0) {
         if (n_type == node_msg || n_type == node_oneof) {
             node->fields = _calloc(sizeof(ep_field_t), fields_n);
-            if (node->fields == NULL) {
+            node->l_fields = _calloc(sizeof(ep_field_t), fields_n);
+            if (node->fields == NULL || node -> l_fields == NULL) {
                 free_node(node);
                 return NULL;
             }
@@ -86,6 +93,22 @@ free_node(ep_node_t *node)
         }
         _free(node->fields);
         node->fields = NULL;
+    }
+
+    if (node->l_fields != NULL) {
+        for (i = 0; i < node->size; i++) {
+            if (node->n_type == node_msg) {
+                field = &(((ep_field_t *) node->l_fields)[i]);
+                if (field->type == field_map || field->type == field_oneof) {
+                    if (field->sub_node != NULL) {
+                        free_node(field->sub_node);
+                        field->sub_node = NULL;
+                    }
+                }
+            }
+        }
+        _free(node->l_fields);
+        node->l_fields = NULL;
     }
 
     if (node->v_fields != NULL) {
@@ -339,12 +362,14 @@ ERL_NIF_TERM
 parse_oneof_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
 {
     ep_field_t        *field;
+    ep_field_t        *l_field;
     int32_t         arity;
     ep_state_t        *state = (ep_state_t *) enif_priv_data(env);
     ERL_NIF_TERM    head, tail, ret;
     ERL_NIF_TERM   *array;
 
     field = node->fields;
+    l_field = node->l_fields;
 
     if (!enif_is_list(env, term)) {
         return_error(env, term);
@@ -355,14 +380,17 @@ parse_oneof_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
         }
         if (arity == 7 && array[0] == state->atom_field) {
             check_ret(ret, fill_msg_field(env, head, field));
+            check_ret(ret, fill_msg_field(env, head, l_field));
         } else {
             return_error(env, term);
         }
         field++;
+        l_field++;
         term = tail;
     }
 
     qsort(node->fields, node->size, sizeof(ep_field_t), sort_compare_name_field);
+    qsort(node->l_fields, node->size, sizeof(ep_field_t), sort_compare_sub_name_l_field);
     return RET_OK;
 }
 
@@ -737,6 +765,12 @@ int
 get_field_compare_name(const void *a, const void *b)
 {
     return (int) (*((ERL_NIF_TERM *) a) - ((ep_field_t *) b)->name);
+}
+
+int
+get_field_compare_sub_name(const void *a, const void *b)
+{
+    return (int) (*((ERL_NIF_TERM *) a) - ((ep_field_t *) b)->sub_name);
 }
 
 int

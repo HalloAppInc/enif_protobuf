@@ -42,6 +42,7 @@ struct ep_node_s {
     uint32_t        v_size;
     void           *fields;
     void           *v_fields;
+    void           *l_fields;
 };
 
 struct ep_node_id_s {
@@ -71,6 +72,9 @@ stack_ensure(ErlNifEnv *env, ep_stack_t *stack, ep_spot_t **spot);
 
 int
 get_field_compare_name(const void *a, const void *b);
+
+int
+get_field_compare_sub_name(const void *a, const void *b);
 
 int
 get_map_field_compare_fnum(const void *a, const void *b);
