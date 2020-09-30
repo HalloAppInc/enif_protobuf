@@ -138,7 +138,7 @@ parse_enum_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
     ep_state_t         *state = (ep_state_t *) enif_priv_data(env);
     ERL_NIF_TERM       *array;
     ERL_NIF_TERM        head, tail, tmp;
-    ep_enum_field_t    *field, *v_field, *vf;
+    ep_enum_field_t    *field, *v_field, *vf, *l_field;
 
     tmp = term;
     while (enif_get_list_cell(env, tmp, &head, &tail)) {
@@ -168,6 +168,7 @@ parse_enum_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
 
     field = node->fields;
     v_field = node->v_fields;
+    l_field = node->l_fields;
     while (enif_get_list_cell(env, term, &head, &tail)) {
         if (!enif_get_tuple(env, head, &arity, to_const(array))) {
             return_error(env, term);
@@ -177,6 +178,8 @@ parse_enum_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
             if (enif_is_atom(env, array[0]) && enif_get_int(env, array[1], &value)) {
                 field->name = array[0];
                 field->value = value;
+                l_field->name = array[0];
+                l_field->value = value;
             } else {
                 return_error(env, term);
             }
@@ -199,12 +202,14 @@ parse_enum_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
         }
         field->proto_v = node->proto_v;
         field++;
+        l_field++;
         v_field++;
 
         term = tail;
     }
 
     qsort(node->fields, node->size, sizeof(ep_enum_field_t), sort_compare_enum_field);
+    qsort(node->l_fields, node->size, sizeof(ep_enum_field_t), sort_compare_sub_name_l_field);
     node->v_size = (uint32_t) (v_field - (ep_enum_field_t *) node->v_fields);
     qsort(node->v_fields, node->v_size, sizeof(ep_enum_field_t), sort_compare_enum_v_field);
 
@@ -474,7 +479,7 @@ fill_msg_field(ErlNifEnv *env, ERL_NIF_TERM term, ep_field_t *field)
 ERL_NIF_TERM
 parse_msg_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
 {
-    ep_field_t        *field, *f;
+    ep_field_t        *field, *f, *l_field;
     int32_t         arity;
     ep_state_t        *state = (ep_state_t *) enif_priv_data(env);
     uint32_t		i, j;
@@ -484,6 +489,7 @@ parse_msg_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
 
     field = node->fields;
     node->v_size = 0;
+    l_field = node->l_fields;
     while (enif_get_list_cell(env, term, &head, &tail)) {
         if (!enif_get_tuple(env, head, &arity, to_const(array))) {
             return_error(env, head);
@@ -491,9 +497,11 @@ parse_msg_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
 
         if (arity == 7 && array[0] == state->atom_field) {
             check_ret(ret, fill_msg_field(env, head, field));
+            check_ret(ret, fill_msg_field(env, head, l_field));
             node->v_size++;
         } else if (arity == 4 && array[0] == make_atom(env, A_ONEOF)) {
             check_ret(ret, fill_oneof_field(env, head, field));
+            check_ret(ret, fill_oneof_field(env, head, l_field));
             node->v_size += field->sub_node->size;
         } else {
             return_error(env, head);
@@ -501,10 +509,12 @@ parse_msg_fields(ErlNifEnv *env, ERL_NIF_TERM term, ep_node_t *node)
 
         field->proto_v = node->proto_v;
         field++;
+        l_field++;
         term = tail;
     }
 
     qsort(node->fields, node->size, sizeof(ep_field_t), sort_compare_msg_field);
+    qsort(node->l_fields, node->size, sizeof(ep_field_t), sort_compare_sub_name_l_field);
 
     if (node->v_size > 0) {
         node->v_fields = _calloc(sizeof(ep_fnum_field_t), node->v_size);
