@@ -883,6 +883,12 @@ fill_default(ErlNifEnv *env, ep_spot_t *spot)
             *t++ = state->atom_false;
             // TODO(murali@): ensure this runs only for proto3.
 
+        } else if (field->type == field_int32 || field->type == field_int64) {
+            *t++ = state->integer_zero;
+
+        }  else if (field->type == field_float || field->type == field_double) {
+            *t++ = state->double_zero;
+
         } else {
             *t++ = state->atom_undefined;
         }
