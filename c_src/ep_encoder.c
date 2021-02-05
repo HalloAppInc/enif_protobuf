@@ -471,6 +471,63 @@ pack_bytes(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
     return RET_OK;
 }
 
+static inline int64_t
+to_integer(unsigned char *str, size_t size) {
+    int32_t c;
+    int32_t sign;
+    int32_t offset;
+    int64_t n;
+
+    if (str[0] == '-') {  // Handle negative integers
+        sign = -1;
+    } else {
+        sign = 0;
+    }
+
+    if (sign == -1) {  // Set starting position to convert
+        offset = 1;
+    }
+    else {
+        offset = 0;
+    }
+
+    n = 0;
+    for (c = offset; c < size; c++) {
+        n = n * 10 + str[c] - '0';
+    }
+
+    if (sign == -1) {
+        n = -n;
+    }
+
+    return n;
+}
+
+static inline int64_t
+pack_bin_as_int64(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
+{
+    ErlNifBinary    bin;    // ErlNifBinary need not be released according to nif docs.
+    if (!enif_inspect_iolist_as_binary(env, term, &bin)) {
+        return_error(env, term);
+    }
+
+    int64_t     val;
+    val = to_integer(bin.data, bin.size);
+
+    if (enc->omit && val == 0) {
+        return RET_OK;
+    }
+    enc_ensure_default(env, enc);
+    if (val < 0) {
+        return_error(env, term);
+    } else {
+        do_pack_uint64(env, (uint64_t) val, enc);
+    }
+
+    return RET_OK;
+}
+
+
 static inline ERL_NIF_TERM
 pack_string(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
 {
@@ -704,81 +761,95 @@ pack_field(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc, ep_field_t *field)
     pack_tag(env, field->fnum, enc);
     sentinel = enc->p;
 
-    switch (field->type) {
-    case field_sint32:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_sint32(env, term, enc));
-        break;
+    if (field->ebin == TRUE) {
+        switch (field->type) {
+        // currently, we only support int64.
+        case field_int64:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_bin_as_int64(env, term, enc));
+            break;
 
-    case field_enum:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_enum(env, term, enc, field->sub_node));
-        break;
+        default:
+            return_error(env, term);
+        }
 
-    case field_int32:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_int32(env, term, enc));
-        break;
+    } else {
+        switch (field->type) {
+        case field_sint32:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_sint32(env, term, enc));
+            break;
 
-    case field_uint32:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_uint32(env, term, enc));
-        break;
+        case field_enum:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_enum(env, term, enc, field->sub_node));
+            break;
 
-    case field_sint64:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_sint64(env, term, enc));
-        break;
+        case field_int32:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_int32(env, term, enc));
+            break;
 
-    case field_int64:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_int64(env, term, enc));
-        break;
+        case field_uint32:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_uint32(env, term, enc));
+            break;
 
-    case field_uint64:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_uint64(env, term, enc));
-        break;
+        case field_sint64:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_sint64(env, term, enc));
+            break;
 
-    case field_sfixed32:
-    case field_fixed32:
-        *(enc->sentinel) |= WIRE_TYPE_32BIT;
-        check_ret(ret, pack_fixed32(env, term, enc));
-        break;
+        case field_int64:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_int64(env, term, enc));
+            break;
 
-    case field_float:
-        *(enc->sentinel) |= WIRE_TYPE_32BIT;
-        check_ret(ret, pack_float(env, term, enc));
-        break;
+        case field_uint64:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_uint64(env, term, enc));
+            break;
 
-    case field_sfixed64:
-    case field_fixed64:
-        *(enc->sentinel) |= WIRE_TYPE_64BIT;
-        check_ret(ret, pack_fixed64(env, term, enc));
-        break;
+        case field_sfixed32:
+        case field_fixed32:
+            *(enc->sentinel) |= WIRE_TYPE_32BIT;
+            check_ret(ret, pack_fixed32(env, term, enc));
+            break;
 
-    case field_double:
-        *(enc->sentinel) |= WIRE_TYPE_64BIT;
-        check_ret(ret, pack_double(env, term, enc));
-        break;
+        case field_float:
+            *(enc->sentinel) |= WIRE_TYPE_32BIT;
+            check_ret(ret, pack_float(env, term, enc));
+            break;
 
-    case field_bool:
-        *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_boolean(env, term, enc));
-        break;
+        case field_sfixed64:
+        case field_fixed64:
+            *(enc->sentinel) |= WIRE_TYPE_64BIT;
+            check_ret(ret, pack_fixed64(env, term, enc));
+            break;
 
-    case field_string:
-        *(enc->sentinel) |= WIRE_TYPE_LENGTH_PREFIXED;
-        check_ret(ret, pack_string(env, term, enc));
-        break;
+        case field_double:
+            *(enc->sentinel) |= WIRE_TYPE_64BIT;
+            check_ret(ret, pack_double(env, term, enc));
+            break;
 
-    case field_bytes:
-        *(enc->sentinel) |= WIRE_TYPE_LENGTH_PREFIXED;
-        check_ret(ret, pack_bytes(env, term, enc));
-        break;
+        case field_bool:
+            *(enc->sentinel) |= WIRE_TYPE_VARINT;
+            check_ret(ret, pack_boolean(env, term, enc));
+            break;
 
-    default:
-        return_error(env, term);
+        case field_string:
+            *(enc->sentinel) |= WIRE_TYPE_LENGTH_PREFIXED;
+            check_ret(ret, pack_string(env, term, enc));
+            break;
+
+        case field_bytes:
+            *(enc->sentinel) |= WIRE_TYPE_LENGTH_PREFIXED;
+            check_ret(ret, pack_bytes(env, term, enc));
+            break;
+
+        default:
+            return_error(env, term);
+        }
     }
 
     if (sentinel == enc->p) {
