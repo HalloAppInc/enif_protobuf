@@ -632,7 +632,6 @@ unpack_field(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term, wire_type_e wire
     *term = 0;
 
     if (field->ebin == TRUE) {
-
         switch (field->type) {
         // currently, we only support int64.
         case field_int64:
@@ -644,107 +643,124 @@ unpack_field(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term, wire_type_e wire
         default:
             return_error(env, dec->term);
         }
-    } else {
-        switch (field->type) {
-        case field_sint32:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_sint32(env, dec, term));
-            break;
-        case field_enum:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_enum(env, dec, term, field->sub_node));
-            break;
-        case field_int32:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_int32(env, dec, term));
-            break;
-        case field_uint32:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_uint32(env, dec, term));
-            break;
-        case field_sint64:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_sint64(env, dec, term));
-            break;
-        case field_int64:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_int64(env, dec, term));
-            break;
-        case field_uint64:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_uint64(env, dec, term));
-            break;
-        case field_bool:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_boolean(env, dec, term));
-            break;
-        case field_sfixed32:
-            if (wire_type != WIRE_TYPE_32BIT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_sfixed32(env, dec, term));
-            break;
-        case field_fixed32:
-            if (wire_type != WIRE_TYPE_32BIT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_fixed32(env, dec, term));
-            break;
-        case field_float:
-            if (wire_type != WIRE_TYPE_32BIT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_float(env, dec, term));
-            break;
-        case field_sfixed64:
-            if (wire_type != WIRE_TYPE_64BIT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_sfixed64(env, dec, term));
-            break;
-        case field_fixed64:
-            if (wire_type != WIRE_TYPE_64BIT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_fixed64(env, dec, term));
-            break;
-        case field_double:
-            if (wire_type != WIRE_TYPE_64BIT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_double(env, dec, term));
-            break;
-        case field_string:
-            if (wire_type != WIRE_TYPE_LENGTH_PREFIXED) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_string(env, dec, term));
-            break;
-        case field_bytes:
-            if (wire_type != WIRE_TYPE_LENGTH_PREFIXED) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_bytes(env, dec, term));
-            break;
-        default:
-            return_error(env, dec->term);
+        return RET_OK;
+    }
+
+    switch (field->type) {
+    case field_sint32:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
         }
+        check_ret(ret, unpack_sint32(env, dec, term));
+        break;
+
+    case field_enum:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_enum(env, dec, term, field->sub_node));
+        break;
+
+    case field_int32:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_int32(env, dec, term));
+        break;
+
+    case field_uint32:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_uint32(env, dec, term));
+        break;
+
+    case field_sint64:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_sint64(env, dec, term));
+        break;
+
+    case field_int64:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_int64(env, dec, term));
+        break;
+
+    case field_uint64:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_uint64(env, dec, term));
+        break;
+
+    case field_bool:
+        if (wire_type != WIRE_TYPE_VARINT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_boolean(env, dec, term));
+        break;
+
+    case field_sfixed32:
+        if (wire_type != WIRE_TYPE_32BIT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_sfixed32(env, dec, term));
+        break;
+
+    case field_fixed32:
+        if (wire_type != WIRE_TYPE_32BIT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_fixed32(env, dec, term));
+        break;
+
+    case field_float:
+        if (wire_type != WIRE_TYPE_32BIT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_float(env, dec, term));
+        break;
+
+    case field_sfixed64:
+        if (wire_type != WIRE_TYPE_64BIT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_sfixed64(env, dec, term));
+        break;
+
+    case field_fixed64:
+        if (wire_type != WIRE_TYPE_64BIT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_fixed64(env, dec, term));
+        break;
+
+    case field_double:
+        if (wire_type != WIRE_TYPE_64BIT) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_double(env, dec, term));
+        break;
+
+    case field_string:
+        if (wire_type != WIRE_TYPE_LENGTH_PREFIXED) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_string(env, dec, term));
+        break;
+
+    case field_bytes:
+        if (wire_type != WIRE_TYPE_LENGTH_PREFIXED) {
+            return pass_field(env, dec, wire_type);
+        }
+        check_ret(ret, unpack_bytes(env, dec, term));
+        break;
+
+    default:
+        return_error(env, dec->term);
     }
 
     return RET_OK;
