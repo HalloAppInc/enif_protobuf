@@ -102,10 +102,9 @@ unpack_int32(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
 
 static inline char * toArray(long int number, size_t size)
 {
-    int32_t n = log10(number) + 1;
     int32_t i;
-    char *numberArray = calloc(n, sizeof(char));
-    for (i = n-1; i >= 0; --i, number /= 10)
+    char *numberArray = calloc(size, sizeof(char));
+    for (i = size-1; i >= 0; --i, number /= 10)
     {
         numberArray[i] = (number % 10) + '0';
     }
