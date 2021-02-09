@@ -100,15 +100,13 @@ unpack_int32(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
     return_error(env, dec->term);
 }
 
-static inline char * toArray(long int number, size_t size)
+static inline void toArray(long int number, char *numberArray, size_t size)
 {
     int32_t i;
-    char *numberArray = calloc(size, sizeof(char));
     for (i = size-1; i >= 0; --i, number /= 10)
     {
         numberArray[i] = (number % 10) + '0';
     }
-    return numberArray;
 }
 
 static inline ERL_NIF_TERM
@@ -123,12 +121,14 @@ unpack_int64_as_bin(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
         val |= ((uint64_t) (*(dec->p) & 0x7f) << shift);
         if ((*(dec->p)++ & 0x80) == 0) {
             size_t size = log10(val) + 1;
-            char * valString = toArray(val, size);
+            char * valString = _alloc(size);
+            toArray(val, valString, size);
             if (!enif_alloc_binary(size, &bin)) {
                 return_error(env, dec->term);
             }
             memcpy(bin.data, valString, size);
             *term = enif_make_binary(env, &bin);
+            _free(valString);
             return RET_OK;
         }
         shift += 7;
@@ -629,22 +629,6 @@ unpack_field(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term, wire_type_e wire
     ERL_NIF_TERM    ret;
 
     *term = 0;
-
-    if (field->ebin == TRUE) {
-        switch (field->type) {
-        // currently, we only support int64.
-        case field_int64:
-            if (wire_type != WIRE_TYPE_VARINT) {
-                return pass_field(env, dec, wire_type);
-            }
-            check_ret(ret, unpack_int64_as_bin(env, dec, term));
-            break;
-        default:
-            return_error(env, dec->term);
-        }
-        return RET_OK;
-    }
-
     switch (field->type) {
     case field_sint32:
         if (wire_type != WIRE_TYPE_VARINT) {
@@ -685,7 +669,11 @@ unpack_field(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term, wire_type_e wire
         if (wire_type != WIRE_TYPE_VARINT) {
             return pass_field(env, dec, wire_type);
         }
-        check_ret(ret, unpack_int64(env, dec, term));
+        if (field->ebin == TRUE) {
+            check_ret(ret, unpack_int64_as_bin(env, dec, term));
+        } else {
+            check_ret(ret, unpack_int64(env, dec, term));
+        }
         break;
 
     case field_uint64:

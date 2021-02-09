@@ -761,23 +761,6 @@ pack_field(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc, ep_field_t *field)
     pack_tag(env, field->fnum, enc);
     sentinel = enc->p;
 
-    if (field->ebin == TRUE) {
-        switch (field->type) {
-        // currently, we only support int64.
-        case field_int64:
-            *(enc->sentinel) |= WIRE_TYPE_VARINT;
-            check_ret(ret, pack_bin_as_int64(env, term, enc));
-            break;
-
-        default:
-            return_error(env, term);
-        }
-        if (sentinel == enc->p) {
-            enc->p = enc->sentinel;
-        }
-        return RET_OK;
-    }
-
     switch (field->type) {
     case field_sint32:
         *(enc->sentinel) |= WIRE_TYPE_VARINT;
@@ -806,7 +789,11 @@ pack_field(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc, ep_field_t *field)
 
     case field_int64:
         *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_int64(env, term, enc));
+        if (field->ebin == TRUE) {
+            check_ret(ret, pack_bin_as_int64(env, term, enc));
+        } else {
+            check_ret(ret, pack_int64(env, term, enc));
+        }
         break;
 
     case field_uint64:
