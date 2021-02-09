@@ -1,0 +1,22 @@
+[
+{ "file"      : "c_src/enif_protobuf.c"
+, "directory" : "/Users/murali/code/halloapp-ejabberd/deps/enif_protobuf"
+, "command"   : "cc -c -Ic_src/ -g -std=c99 -Wall -Werror -O3 -fno-strict-aliasing -g -Wall -fPIC -MMD -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/lib/erl_interface-3.13.2/include\" -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/erts-10.7/include\" c_src/enif_protobuf.c -o c_src/enif_protobuf.o"
+},
+{ "file"      : "c_src/ep_cache.c"
+, "directory" : "/Users/murali/code/halloapp-ejabberd/deps/enif_protobuf"
+, "command"   : "cc -c -Ic_src/ -g -std=c99 -Wall -Werror -O3 -fno-strict-aliasing -g -Wall -fPIC -MMD -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/lib/erl_interface-3.13.2/include\" -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/erts-10.7/include\" c_src/ep_cache.c -o c_src/ep_cache.o"
+},
+{ "file"      : "c_src/ep_decoder.c"
+, "directory" : "/Users/murali/code/halloapp-ejabberd/deps/enif_protobuf"
+, "command"   : "cc -c -Ic_src/ -g -std=c99 -Wall -Werror -O3 -fno-strict-aliasing -g -Wall -fPIC -MMD -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/lib/erl_interface-3.13.2/include\" -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/erts-10.7/include\" c_src/ep_decoder.c -o c_src/ep_decoder.o"
+},
+{ "file"      : "c_src/ep_encoder.c"
+, "directory" : "/Users/murali/code/halloapp-ejabberd/deps/enif_protobuf"
+, "command"   : "cc -c -Ic_src/ -g -std=c99 -Wall -Werror -O3 -fno-strict-aliasing -g -Wall -fPIC -MMD -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/lib/erl_interface-3.13.2/include\" -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/erts-10.7/include\" c_src/ep_encoder.c -o c_src/ep_encoder.o"
+},
+{ "file"      : "c_src/ep_node.c"
+, "directory" : "/Users/murali/code/halloapp-ejabberd/deps/enif_protobuf"
+, "command"   : "cc -c -Ic_src/ -g -std=c99 -Wall -Werror -O3 -fno-strict-aliasing -g -Wall -fPIC -MMD -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/lib/erl_interface-3.13.2/include\" -I\"/usr/local/Cellar/erlang/22.3/lib/erlang/erts-10.7/include\" c_src/ep_node.c -o c_src/ep_node.o"
+}
+]

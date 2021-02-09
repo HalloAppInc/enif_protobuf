@@ -100,35 +100,30 @@ unpack_int32(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
     return_error(env, dec->term);
 }
 
-static inline void toArray(long int number, char *numberArray, size_t size)
-{
-    int32_t i;
-    for (i = size-1; i >= 0; --i, number /= 10)
-    {
-        numberArray[i] = (number % 10) + '0';
-    }
-}
-
 static inline ERL_NIF_TERM
 unpack_int64_as_bin(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
 {
     int32_t     shift = 0, left = 10;
     int64_t     val = 0;
     ErlNifBinary    bin;
+    char valString[32];
 
     while (left && dec->p < dec->end) {
 
         val |= ((uint64_t) (*(dec->p) & 0x7f) << shift);
         if ((*(dec->p)++ & 0x80) == 0) {
-            size_t size = log10(val) + 1;
-            char * valString = _alloc(size);
-            toArray(val, valString, size);
+            size_t size = 0;
+            do {
+                valString[31 - size] = (val % 10) + '0';
+                size++;
+                val /= 10;
+            } while(val > 0);
+
             if (!enif_alloc_binary(size, &bin)) {
                 return_error(env, dec->term);
             }
-            memcpy(bin.data, valString, size);
+            memcpy(bin.data, valString + 32 - size, size);
             *term = enif_make_binary(env, &bin);
-            _free(valString);
             return RET_OK;
         }
         shift += 7;
