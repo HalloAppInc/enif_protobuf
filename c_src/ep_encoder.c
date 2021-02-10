@@ -683,7 +683,11 @@ pack_element_packed(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc, ep_field_t
         break;
 
     case field_int64:
-        check_ret(ret, pack_int64(env, term, enc));
+        if (field->ebin == TRUE) {
+            check_ret(ret, pack_bin_as_int64(env, term, enc));
+        } else {
+            check_ret(ret, pack_int64(env, term, enc));
+        }
         break;
 
     case field_uint64:
