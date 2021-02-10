@@ -26,6 +26,7 @@ struct ep_field_s {
     uint32_t            proto_v;
     uint32_t            is_oneof;
     uint32_t            packed;
+    uint32_t            ebin;
 };
 
 struct ep_fnum_field_s {

@@ -101,6 +101,38 @@ unpack_int32(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
 }
 
 static inline ERL_NIF_TERM
+unpack_int64_as_bin(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
+{
+    int32_t     shift = 0, left = 10;
+    int64_t     val = 0;
+    ErlNifBinary    bin;
+    char valString[32];
+
+    while (left && dec->p < dec->end) {
+
+        val |= ((uint64_t) (*(dec->p) & 0x7f) << shift);
+        if ((*(dec->p)++ & 0x80) == 0) {
+            size_t size = 0;
+            while (val > 0) {
+                valString[31 - size] = (val % 10) + '0';
+                size++;
+                val /= 10;
+            }
+            if (!enif_alloc_binary(size, &bin)) {
+                return_error(env, dec->term);
+            }
+            memcpy(bin.data, valString + 32 - size, size);
+            *term = enif_make_binary(env, &bin);
+            return RET_OK;
+        }
+        shift += 7;
+        left--;
+    }
+
+    return_error(env, dec->term);
+}
+
+static inline ERL_NIF_TERM
 unpack_fixed32(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
 {
     uint32_t    val = 0;
@@ -540,7 +572,11 @@ unpack_element_packed(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term, ep_fiel
             break;
 
         case field_int64:
-            check_ret(ret, unpack_int64(env, dec, &head));
+            if (field->ebin == TRUE) {
+                check_ret(ret, unpack_int64_as_bin(env, dec, &head));
+            } else {
+                check_ret(ret, unpack_int64(env, dec, &head));
+            }
             break;
 
         case field_uint64:
@@ -631,7 +667,11 @@ unpack_field(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term, wire_type_e wire
         if (wire_type != WIRE_TYPE_VARINT) {
             return pass_field(env, dec, wire_type);
         }
-        check_ret(ret, unpack_int64(env, dec, term));
+        if (field->ebin == TRUE) {
+            check_ret(ret, unpack_int64_as_bin(env, dec, term));
+        } else {
+            check_ret(ret, unpack_int64(env, dec, term));
+        }
         break;
 
     case field_uint64:
@@ -884,8 +924,17 @@ fill_default(ErlNifEnv *env, ep_spot_t *spot)
             // TODO(murali@): ensure this runs only for proto3.
 
         } else if (field->type == field_int32 || field->type == field_int64) {
-            *t++ = state->integer_zero;
-
+            if (field->ebin == TRUE) {
+                // Using state->binary_nil is causing a crash - so we have to make our own binary here.
+                ErlNifBinary bin;
+                if (!enif_alloc_binary(0, &bin)) {
+                    *t++ = state->integer_zero;
+                } else {
+                    *t++ = enif_make_binary(env, &bin);
+                }
+            } else {
+                *t++ = state->integer_zero;
+            }
         }  else if (field->type == field_float || field->type == field_double) {
             *t++ = state->double_zero;
 

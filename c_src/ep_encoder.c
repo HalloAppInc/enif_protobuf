@@ -471,6 +471,31 @@ pack_bytes(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
     return RET_OK;
 }
 
+static inline int64_t
+pack_bin_as_int64(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
+{
+    ErlNifBinary    bin;    // ErlNifBinary need not be released according to nif docs.
+    if (!enif_inspect_iolist_as_binary(env, term, &bin)) {
+        return_error(env, term);
+    }
+
+    int64_t     val;
+    val = atol((char *)bin.data);
+
+    if (enc->omit && val == 0) {
+        return RET_OK;
+    }
+    enc_ensure_default(env, enc);
+    if (val < 0) {
+        return_error(env, term);
+    } else {
+        do_pack_uint64(env, (uint64_t) val, enc);
+    }
+
+    return RET_OK;
+}
+
+
 static inline ERL_NIF_TERM
 pack_string(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
 {
@@ -658,7 +683,11 @@ pack_element_packed(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc, ep_field_t
         break;
 
     case field_int64:
-        check_ret(ret, pack_int64(env, term, enc));
+        if (field->ebin == TRUE) {
+            check_ret(ret, pack_bin_as_int64(env, term, enc));
+        } else {
+            check_ret(ret, pack_int64(env, term, enc));
+        }
         break;
 
     case field_uint64:
@@ -732,7 +761,11 @@ pack_field(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc, ep_field_t *field)
 
     case field_int64:
         *(enc->sentinel) |= WIRE_TYPE_VARINT;
-        check_ret(ret, pack_int64(env, term, enc));
+        if (field->ebin == TRUE) {
+            check_ret(ret, pack_bin_as_int64(env, term, enc));
+        } else {
+            check_ret(ret, pack_int64(env, term, enc));
+        }
         break;
 
     case field_uint64:
