@@ -113,12 +113,11 @@ unpack_int64_as_bin(ErlNifEnv *env, ep_dec_t *dec, ERL_NIF_TERM *term)
         val |= ((uint64_t) (*(dec->p) & 0x7f) << shift);
         if ((*(dec->p)++ & 0x80) == 0) {
             size_t size = 0;
-            do {
+            while (val > 0) {
                 valString[31 - size] = (val % 10) + '0';
                 size++;
                 val /= 10;
-            } while(val > 0);
-
+            }
             if (!enif_alloc_binary(size, &bin)) {
                 return_error(env, dec->term);
             }
@@ -926,7 +925,13 @@ fill_default(ErlNifEnv *env, ep_spot_t *spot)
 
         } else if (field->type == field_int32 || field->type == field_int64) {
             if (field->ebin == TRUE) {
-                *t++ = state->binary_nil;
+                // Using state->binary_nil is causing a crash - so we have to make our own binary here.
+                ErlNifBinary bin;
+                if (!enif_alloc_binary(0, &bin)) {
+                    *t++ = state->integer_zero;
+                } else {
+                    *t++ = enif_make_binary(env, &bin);
+                }
             } else {
                 *t++ = state->integer_zero;
             }
