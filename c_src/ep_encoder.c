@@ -472,6 +472,39 @@ pack_bytes(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
 }
 
 static inline int64_t
+to_integer(unsigned char *str, size_t size) {
+    int32_t c;
+    int32_t sign;
+    int32_t offset;
+    int64_t n;
+
+    if (str[0] == '-') {  // Handle negative integers
+        sign = -1;
+    } else {
+        sign = 0;
+    }
+
+    if (sign == -1) {  // Set starting position to convert
+        offset = 1;
+    }
+    else {
+        offset = 0;
+    }
+
+    n = 0;
+    for (c = offset; c < size; c++) {
+        n = n * 10 + str[c] - '0';
+    }
+
+    if (sign == -1) {
+        n = -n;
+    }
+
+    return n;
+}
+
+
+static inline int64_t
 pack_bin_as_int64(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
 {
     ErlNifBinary    bin;    // ErlNifBinary need not be released according to nif docs.
@@ -480,7 +513,7 @@ pack_bin_as_int64(ErlNifEnv *env, ERL_NIF_TERM term, ep_enc_t *enc)
     }
 
     int64_t     val;
-    val = atol((char *)bin.data);
+    val = to_integer(bin.data, bin.size);
 
     if (enc->omit && val == 0) {
         return RET_OK;
